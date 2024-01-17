@@ -47,3 +47,49 @@ def cosine_similarity():
 
     return jsonify({'most_similar_text': texts[most_similar_index]})
 
+from flask import Flask, request, jsonify
+import re
+
+app = Flask(__name__)
+
+def extract_vehicle_info(data):
+    reg_number_pattern = r'%([A-Z0-9]+)%'
+    color_pattern = r'%([a-zA-Z\s/]+)%'
+    brand_pattern = r'%([A-Z]+)%'
+    series_pattern = r'%([a-zA-Z0-9\s]+)%'
+
+    reg_number_match = re.search(reg_number_pattern, data)
+    color_match = re.search(color_pattern, data)
+    brand_match = re.search(brand_pattern, data)
+    series_match = re.search(series_pattern, data)
+
+    if reg_number_match and color_match and brand_match and series_match:
+        registration_number = reg_number_match.group(1)
+        color = color_match.group(1)
+        brand = brand_match.group(1)
+        series = series_match.group(1)
+
+        return {
+            'Registration Number': registration_number,
+            'Color': color,
+            'Brand': brand,
+            'Series': series
+        }
+    else:
+        return None
+
+@app.route('/api/extract-vehicle-info', methods=['POST'])
+def api_extract_vehicle_info():
+    data = request.json.get('data')
+
+    if data:
+        result = extract_vehicle_info(data)
+        if result:
+            return jsonify(result)
+        else:
+            return jsonify({'error': 'Could not extract vehicle information.'}), 400
+    else:
+        return jsonify({'error': 'No data provided in the request.'}), 400
+
+if __name__ == '__main__':
+    app.run(debug=True)
